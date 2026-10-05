@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light dark">
+    <meta name="theme-color" content="#4f46e5">
+    <meta name="description" content="Aplicación de diario personal responsiva, accesible y con soporte sin conexión (PWA).">
+    <meta name="author" content="Mi Diario Personal">
+    <title>Mi Diario Personal - Aplicación Responsiva y Offline (PWA)</title>
+    
+    <!-- Script Anti-FOUC para aplicar tema oscuro inmediatamente antes del primer pintado -->
+    <script>
+        (function() {
+            try {
+                if (localStorage.getItem('temaDiario') === 'oscuro') {
+                    document.documentElement.classList.add('dark-theme');
+                }
+            } catch (e) {}
+        })();
+    </script>
+
+    <!-- PWA Manifest & Favicon SVG Codificado -->
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E📖%3C/text%3E%3C/svg%3E">
+    
+    <!-- Hoja de Estilos -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Enlace de Salto para Accesibilidad de Teclado (Skip Link) -->
+    <a href="#main" class="skip-link">Saltar al contenido principal</a>
+
+    <!-- Mensaje NoScript para usuarios sin JavaScript -->
+    <noscript>
+        <div class="noscript-banner">
+            ⚠️ <strong>JavaScript Desactivado:</strong> Esta aplicación requiere JavaScript habilitado para gestionar la base de datos local y la sincronización.
+        </div>
+    </noscript>
+
+    <!-- Encabezado Principal de la Aplicación -->
+    <header class="app-header">
+        <div class="header-container">
+            <div class="brand">
+                <span class="brand-icon" aria-hidden="true">📖</span>
+                <h1 class="brand-title">Mi Diario Personal</h1>
+            </div>
+            
+            <!-- Indicador de Estado de Conexión y Controles de Usuario -->
+            <div class="header-controls">
+                <div id="estadoConexionContainer" class="connection-status-wrapper">
+                    <span id="estadoConexion" class="badge-status online" role="status">
+                        <span class="status-dot" aria-hidden="true"></span>
+                        <span class="status-text">Conectado</span>
+                    </span>
+                </div>
+
+                <!-- Botón de Alternancia de Tema Claro/Oscuro -->
+                <button type="button" id="btnTema" class="btn-icon" aria-label="Cambiar a tema oscuro" title="Cambiar tema">
+                    <span id="iconoTema" aria-hidden="true">🌙</span>
+                </button>
+
+                <!-- Área de Sesión de Usuario (Visible solo cuando se inicie sesión) -->
+                <div id="infoUsuarioHeader" class="user-info-header hidden">
+                    <span class="user-greeting">Hola, <strong id="nombreUsuarioHeader">Usuario</strong></span>
+                    <button type="button" id="btnCerrarSesion" class="btn btn-secondary btn-sm">
+                        <span aria-hidden="true">🚪</span> Cerrar sesión
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Contenedor para Notificaciones Globales Toast -->
+    <div id="notificacionToast" class="toast-container" role="region" aria-label="Notificaciones del sistema" aria-live="polite"></div>
+
+    <!-- Contenido Principal con Vistas Dinámicas -->
+    <main id="main" class="main-content" tabindex="-1">
+
+        <!-- ======================================================= -->
+        <!-- 1. VISTA DE REGISTRO DE USUARIO (#vistaRegistro)        -->
+        <!-- ======================================================= -->
+        <section id="vistaRegistro" class="view-section" aria-labelledby="tituloRegistro">
+            <div class="card card-auth">
+                <header class="card-header">
+                    <h2 id="tituloRegistro">Crear una Cuenta</h2>
+                    <p class="subtitle">Registra tus datos para guardar tus entradas personales de forma segura.</p>
+                </header>
+
+                <form id="formRegistro" novalidate>
+                    <!-- Campo: Nombre Completo -->
+                    <div class="form-group">
+                        <label for="regNombre">Nombre completo <span class="req">*</span></label>
+                        <input 
+                            type="text" 
+                            id="regNombre" 
+                            name="nombre" 
+                            placeholder="Ej. María García" 
+                            required 
+                            aria-describedby="error-regNombre"
+                            autocomplete="name"
+                        >
+                        <small id="error-regNombre" class="error-message"></small>
+                    </div>
+
+                    <!-- Campo: Edad -->
+                    <div class="form-group">
+                        <label for="regEdad">Edad (años) <span class="req">*</span></label>
+                        <input 
+                            type="number" 
+                            id="regEdad" 
+                            name="edad" 
+                            placeholder="Ej. 25" 
+                            min="5" 
+                            max="120" 
+                            required 
+                            aria-describedby="error-regEdad"
+                        >
+                        <small id="error-regEdad" class="error-message"></small>
+                    </div>
+
+                    <!-- Campo: Nombre de Usuario -->
+                    <div class="form-group">
+                        <label for="regUsuario">Nombre de usuario <span class="req">*</span></label>
+                        <input 
+                            type="text" 
+                            id="regUsuario" 
+                            name="usuario" 
+                            placeholder="Ej. mariagarcia" 
+                            required 
+                            aria-describedby="error-regUsuario"
+                            autocomplete="username"
+                        >
+                        <small id="error-regUsuario" class="error-message"></small>
+                    </div>
+
+                    <!-- Campo: Correo Electrónico -->
+                    <div class="form-group">
+                        <label for="regEmail">Correo electrónico <span class="req">*</span></label>
+                        <input 
+                            type="email" 
+                            id="regEmail" 
+                            name="email" 
+                            placeholder="ejemplo@correo.com" 
+                            required 
+                            aria-describedby="error-regEmail"
+                            autocomplete="email"
+                        >
+                        <small id="error-regEmail" class="error-message"></small>
+                    </div>
+
+                    <!-- Campo: Contraseña -->
+                    <div class="form-group">
+                        <label for="regPassword">Contraseña <span class="req">*</span></label>
+                        <p id="ayudaPassword" class="field-help">Mínimo 8 caracteres, al menos una mayúscula, una minúscula y un número.</p>
+                        <div class="password-wrapper">
+                            <input 
+                                type="password" 
+                                id="regPassword" 
+                                name="password" 
+                                placeholder="Ingresa tu contraseña" 
+                                required 
+                                aria-describedby="ayudaPassword error-regPassword"
+                                autocomplete="new-password"
+                            >
+                            <button type="button" class="btn-toggle-password" aria-label="Mostrar contraseña" title="Mostrar u ocultar contraseña">👁️</button>
+                        </div>
+                        <small id="error-regPassword" class="error-message"></small>
+                    </div>
+
+                    <!-- Campo: Confirmar Contraseña -->
+                    <div class="form-group">
+                        <label for="regConfirmPassword">Confirmar contraseña <span class="req">*</span></label>
+                        <div class="password-wrapper">
+                            <input 
+                                type="password" 
+                                id="regConfirmPassword" 
+                                name="confirmPassword" 
+                                placeholder="Repite tu contraseña" 
+                                required 
+                                aria-describedby="error-regConfirmPassword"
+                                autocomplete="new-password"
+                            >
+                            <button type="button" class="btn-toggle-password" aria-label="Mostrar contraseña" title="Mostrar u ocultar contraseña">👁️</button>
+                        </div>
+                        <small id="error-regConfirmPassword" class="error-message"></small>
+                    </div>
+
+                    <button type="submit" id="btnCrearCuenta" class="btn btn-primary btn-block">
+                        <span aria-hidden="true">✨</span> Crear cuenta
+                    </button>
+                </form>
+
+                <footer class="card-footer">
+                    <p>¿Ya tienes una cuenta? <a href="#vistaLogin" id="linkIrLogin" class="link">Iniciar sesión</a></p>
+                </footer>
+            </div>
+        </section>
+
+        <!-- ======================================================= -->
+        <!-- 2. VISTA DE INICIO DE SESIÓN (#vistaLogin)              -->
+        <!-- ======================================================= -->
+        <section id="vistaLogin" class="view-section hidden" aria-labelledby="tituloLogin">
+            <div class="card card-auth">
+                <header class="card-header">
+                    <h2 id="tituloLogin">Iniciar Sesión</h2>
+                    <p class="subtitle">Ingresa a tu diario personal para ver tus pensamientos y recuerdos.</p>
+                </header>
+
+                <form id="formLogin" novalidate>
+                    <!-- Campo: Usuario -->
+                    <div class="form-group">
+                        <label for="loginUsuario">Nombre de usuario <span class="req">*</span></label>
+                        <input 
+                            type="text" 
+                            id="loginUsuario" 
+                            name="usuario" 
+                            placeholder="Tu nombre de usuario" 
+                            required 
+                            aria-describedby="error-loginUsuario"
+                            autocomplete="username"
+                        >
+                        <small id="error-loginUsuario" class="error-message"></small>
+                    </div>
+
+                    <!-- Campo: Contraseña -->
+                    <div class="form-group">
+                        <label for="loginPassword">Contraseña <span class="req">*</span></label>
+                        <div class="password-wrapper">
+                            <input 
+                                type="password" 
+                                id="loginPassword" 
+                                name="password" 
+                                placeholder="Tu contraseña" 
+                                required 
+                                aria-describedby="error-loginPassword"
+                                autocomplete="current-password"
+                            >
+                            <button type="button" class="btn-toggle-password" aria-label="Mostrar contraseña" title="Mostrar u ocultar contraseña">👁️</button>
+                        </div>
+                        <small id="error-loginPassword" class="error-message"></small>
+                    </div>
+
+                    <!-- Opción: Recordarme (localStorage) -->
+                    <div class="form-group form-checkbox">
+                        <label for="chkRecordarme" class="checkbox-label">
+                            <input type="checkbox" id="chkRecordarme" name="recordarme">
+                            <span>Recordar mi usuario en este equipo</span>
+                        </label>
+                    </div>
+
+                    <button type="submit" id="btnIniciarSesion" class="btn btn-primary btn-block">
+                        <span aria-hidden="true">🔑</span> Iniciar sesión
+                    </button>
+                </form>
+
+                <footer class="card-footer">
+                    <p>¿No tienes una cuenta? <a href="#vistaRegistro" id="linkIrRegistro" class="link">Regístrate aquí</a></p>
+                </footer>
+            </div>
+        </section>
+
+        <!-- ======================================================= -->
+        <!-- 3. VISTA PRINCIPAL DEL DIARIO (#vistaDiario)            -->
+        <!-- ======================================================= -->
+        <section id="vistaDiario" class="view-section hidden" aria-labelledby="tituloDiarioForm">
+            
+            <div class="diario-layout">
+                <!-- Columna Izquierda / Superior: Formulario de Entradas -->
+                <div class="card card-form-entrada">
+                    <header class="card-header">
+                        <h2 id="tituloDiarioForm"><span aria-hidden="true">✍️</span> Nueva Entrada de Diario</h2>
+                        <p class="subtitle">Escribe tus vivencias, ideas o reflexiones de hoy.</p>
+                    </header>
+
+                    <form id="formEntrada" novalidate>
+                        <!-- Campo Oculto para rastrear el ID si estamos en modo Edición -->
+                        <input type="hidden" id="entradaId" name="id" value="">
+
+                        <!-- Título de la Entrada -->
+                        <div class="form-group">
+                            <label for="entradaTitulo">Título de la entrada <span class="req">*</span></label>
+                            <input 
+                                type="text" 
+                                id="entradaTitulo" 
+                                name="titulo" 
+                                placeholder="Ej. Un día productivo en el trabajo" 
+                                required 
+                                aria-describedby="error-entradaTitulo"
+                            >
+                            <small id="error-entradaTitulo" class="error-message"></small>
+                        </div>
+
+                        <!-- Contenido de la Entrada -->
+                        <div class="form-group">
+                            <label for="entradaContenido">Contenido de la entrada <span class="req">*</span></label>
+                            <textarea 
+                                id="entradaContenido" 
+                                name="contenido" 
+                                rows="6" 
+                                placeholder="Escribe aquí tus pensamientos..." 
+                                required 
+                                aria-describedby="error-entradaContenido"
+                            ></textarea>
+                            <small id="error-entradaContenido" class="error-message"></small>
+                        </div>
+
+                        <!-- Acciones del Formulario -->
+                        <div class="form-actions">
+                            <button type="submit" id="btnGuardarEntrada" class="btn btn-primary">
+                                <span aria-hidden="true">💾</span> Guardar entrada
+                            </button>
+                            <button type="button" id="btnCancelarEdicion" class="btn btn-secondary hidden">
+                                <span aria-hidden="true">❌</span> Cancelar edición
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Columna Derecha / Inferior: Lista de Entradas y Búsqueda -->
+                <div class="card card-lista-entradas">
+                    <header class="card-header flex-header">
+                        <h2 id="tituloListadoEntradas"><span aria-hidden="true">📚</span> Mis Entradas</h2>
+                        <!-- Buscador/Filtro temporal (sessionStorage) -->
+                        <div class="search-box">
+                            <label for="inputBuscarEntrada" class="visually-hidden">Buscar en las entradas</label>
+                            <input 
+                                type="search" 
+                                id="inputBuscarEntrada" 
+                                placeholder="🔍 Buscar por título o texto..."
+                            >
+                        </div>
+                    </header>
+
+                    <!-- Banner Informativo de Sincronización Pendiente -->
+                    <div id="bannerPendientes" class="banner-sync hidden" role="status">
+                        <span>⏳ Tienes operaciones guardadas localmente pendientes de sincronizar con el servidor.</span>
+                    </div>
+
+                    <!-- Resumen de Resultados de Búsqueda para Lectores de Pantalla -->
+                    <p id="resumenBusqueda" class="visually-hidden" role="status" aria-live="polite"></p>
+
+                    <!-- Listado dinámico de entradas -->
+                    <div 
+                        id="contenedorEntradas" 
+                        class="entradas-grid" 
+                        aria-busy="false"
+                    >
+                        <!-- Estado Vacío -->
+                        <div id="mensajeVacio" class="empty-state">
+                            <span class="empty-icon" aria-hidden="true">📝</span>
+                            <p>Aún no tienes entradas. ¡Escribe la primera!</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- Diálogo Modal de Confirmación para Eliminar Entrada -->
+    <dialog id="dialogoConfirmacion" class="modal-dialog" role="alertdialog" aria-labelledby="tituloModal" aria-describedby="mensajeModal">
+        <div class="modal-content">
+            <h3 id="tituloModal"><span aria-hidden="true">⚠️</span> Confirmar Eliminación</h3>
+            <p id="mensajeModal">¿Estás seguro de que deseas eliminar esta entrada de tu diario? Esta acción no se puede deshacer.</p>
+            <div class="modal-actions">
+                <button type="button" id="btnCancelarEliminar" class="btn btn-secondary" autofocus>Cancelar</button>
+                <button type="button" id="btnConfirmarEliminar" class="btn btn-danger">Eliminar</button>
+            </div>
+        </div>
+    </dialog>
+
+    <!-- Pie de Página Informativo -->
+    <footer class="app-footer">
+        <p>Mi Diario Personal &copy; 2026 — Aplicación Web Responsiva, Accesible e Identidad PWA Offline-First.</p>
+    </footer>
+
+    <!-- Script Principal -->
+    <script src="script.js"></script>
+</body>
+</html>

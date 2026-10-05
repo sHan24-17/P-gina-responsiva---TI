@@ -1,0 +1,56 @@
+name: Validar y desplegar en GitHub Pages
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Validar archivos del proyecto
+    runs-on: ubuntu-latest
+    steps:
+      - name: Obtener el código
+        uses: actions/checkout@v4
+
+      - name: Verificar estructura de archivos
+        run: |
+          echo "Verificando archivos requeridos..."
+          test -f index.html || (echo "Falta index.html" && exit 1)
+          test -f styles.css || (echo "Falta styles.css" && exit 1)
+          test -f script.js || (echo "Falta script.js" && exit 1)
+          test -f sw.js || (echo "Falta sw.js" && exit 1)
+          test -f manifest.webmanifest || (echo "Falta manifest.webmanifest" && exit 1)
+          echo "Estructura de archivos válida."
+
+  deploy:
+    name: Publicar en GitHub Pages
+    needs: validate
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Obtener el código
+        uses: actions/checkout@v4
+
+      - name: Configurar GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Cargar artefacto
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: "."
+
+      - name: Desplegar en GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
