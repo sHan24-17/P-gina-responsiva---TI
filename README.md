@@ -74,4 +74,4 @@ El proyecto incluye un informe técnico detallado en [`AUDITORIA.md`](./AUDITORI
 
 ## 👤 Autor
 
-Desarrollado como parte de las actividades prácticas de **Desarrollo de Plataformas**.
+Shandé Rodríguez - Desarrollado como parte de las actividades prácticas de **Desarrollo de Plataformas**.
